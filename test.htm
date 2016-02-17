@@ -1,0 +1,178 @@
+<!DOCTYPE HTML>
+<html>        
+	<head>            
+		<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+		<title>Similar Cells</title>  
+		<script src="http://services.web-manufacture.net/Base/v1.5?join=true" type="text/javascript"></script>
+		<link href="http://services.web-manufacture.net/Styles/System.default.css" rel="stylesheet">
+	
+	    <script src="http://services.web-manufacture.net/UI/cells.js"></script>
+	    
+		<style type="text/css">
+			html {
+				height: initial;	
+			}
+			
+			body{
+				font-family : verdana;
+				font-size: 16px;
+			}
+			
+			#CellsBox .cell{
+            	width: 40px;
+                height: 40px;
+                display: inline-block;
+                border: solid 1px gray;
+                text-align: center;
+                vertical-align: middle;
+                box-sizing: border-box;
+                padding-top: 8px;
+			}
+			
+			#CellsBox .cell:hover{
+			    background-color: #FFC;
+			}
+			
+			#CellsBox .cell.selected{
+			    background-color: #9F9;
+			}
+			
+			#CellsBox .cell.found{
+			    background-color: #cFc;
+			}
+		</style>  				   
+	</head>        
+	<body> 				
+	    <include url="http://services.web-manufacture.net/UI/buttons.htm"></include>
+	    
+	    <h2 id='CellsFound'>Найдено клеток: 0</h2>
+	    <pre id='Annotation' style='padding-bottom: 10px;'>
+Чтобы проверить соседей нажмите на клетку. 
+Если вы выберете клетку у которой нет соседей с таким же значением,
+игра будет окончена.
+Когда будете готовы нажимите "Начать игру" и наслаждайтесь ;)
+	    </pre>
+		
+		<div id="CellsBox">
+			
+		</div>
+		<br/>
+		<label>Поле:</label><br/>
+		<div  class='btn-ira' onclick='largerField()'>
+			Увеличить >
+		</div>
+		
+		<div class='btn-ira' onclick='smallerField()'>
+			< Уменьшить
+		</div>
+		<br/>
+		
+		
+		<label>Значение:</label><br/>
+		<div  class='btn-ira' onclick='largerValue()'>
+			Увеличить >
+		</div>
+		
+		<div class='btn-ira' onclick='smallerValue()'>
+			< Уменьшить
+		</div>
+		
+		<br/><br/>
+		
+		<div class='btn-ira ok' onclick='newGame()'>
+			Начать игру
+		</div>
+				
+		<script language="JavaScript">
+		    var values = [];
+		    var maxValue = 10;
+		    var counter = 0;
+		    var started = false;
+
+            function onFill (row, col){
+		        this.value = parseInt(Math.random()*maxValue);
+		        this.set("" + this.value);
+		    }
+
+			WS.DOMload(function init(){	
+			    cells = new Cells(CellsBox, {cols : 7, rows : 7});
+			    cells.each(onFill);
+			    cells.on("fill", function(){
+			       counter = 0;
+			       CellsFound.set("Найдено клеток: " + counter); 
+			    });
+			    cells.on("click", function(event, cell){
+			        cells.all(".cell.found").del(".found");
+			        var results = findNeighbors(cells, cell.col, cell.row, cell.value);
+			        if (started){
+			            if (results.length <= 1) {
+    			            alert("Game Over!");
+    			            newGame();
+    			        }
+			            counter += results.length;
+			            var copy = results.concat([]);
+			            setTimeout(function(){
+        		        copy.each(function(coord){
+        		            onFill.call(cells.cell(coord[0], coord[1]));
+        		        });    
+			        }, 1000);
+			        }
+			        results.each(function(coord){
+			            var cell = cells.cell(coord[0], coord[1]);
+			            cell.add(".found");
+			        });
+			        CellsFound.set("Найдено клеток: " + counter);
+			    });
+			});
+			
+			function findNeighbors(cells, col, row, value){
+			    var checked = {};
+			    var results = [];
+			    function lookRecursively(col, row){
+			        //Used to prevent checking cells already verified
+			        if (checked[col + "_" + row]) return;
+			        results.push([col, row]);
+			        //Store checking fact
+			        checked[col + "_" + row] = true;
+			        if (col > 1 && cells.value(col - 1, row) == value)
+			            lookRecursively(col-1, row);
+			        if (col < cells.cols && cells.value(col + 1, row) == value)
+			            lookRecursively(col+1, row);
+			        if (row > 1 && cells.value(col, row - 1) == value)
+			            lookRecursively(col, row - 1);
+			        if (row < cells.rows && cells.value(col, row + 1) == value)
+			            lookRecursively(col, row + 1);
+			    }
+			    lookRecursively(col, row);
+			    return results;
+			}
+			
+			function newGame(){
+			    counter = 0;
+			    started = true;
+			    cells.fill(cells.cols, cells.cols , onFill);
+			}
+			
+			
+			function smallerField(){
+			    if (cells.cols > 5) cells.fill(cells.cols - 1, cells.cols - 1, onFill);
+			}
+			
+			
+			function largerField(){
+			    if (cells.cols < 40) cells.fill(cells.cols + 1, cells.cols + 1, onFill);
+			}
+			
+			function smallerValue(){
+			    if (maxValue > 2) maxValue--;
+			    cells.fill(cells.cols, cells.cols , onFill);
+			}
+			
+			
+			function largerValue(){
+			    if (maxValue <= 10) maxValue++;
+			    cells.fill(cells.cols, cells.cols , onFill);
+			}
+		</script>
+	</body>
+</html>
